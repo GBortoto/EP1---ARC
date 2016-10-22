@@ -10,7 +10,7 @@
 
 .data		
 	array1: .word 2 3 4 6 7 8 9 12 15
-	array2: .word 1 3 5 6 7 8
+	array2: .word 1 3 3 3 3 3 5 6 7 8
 	resposta: .space 100
 	space: .asciiz " "
 	pulaLinha: .asciiz "\n"
@@ -21,7 +21,7 @@
 la $s0, array1
 addi $s1,$zero,8 # array.length - 1
 la $s2, array2
-addi $s3,$zero,5
+addi $s3,$zero,9
 la $s4, space
 la $s5, pulaLinha
 la $s6, resposta
@@ -166,6 +166,7 @@ sll $t2,$t1,2
 add $t2,$t2,$a3
 lw $t4,0($t2)		# t4 = array2[j]
 
+
 seq $t2,$t3,$t4		# Se array[i] == array2[j]
 beq $t2,1,Equal
 slt $t2,$t3,$t4		# Se array[i] < array2[j]
@@ -173,31 +174,51 @@ beq $t2,1,Less
 j Greater		# Se array[i] > array2[j]
 
 Equal:
-
-# Debugging
-addi $t7,$t7,1
+sll $t2,$t5,2
+add $t2,$t2,$t6
+lw $t7,0($t2)		# t7 = resposta[-1]
+seq $t2,$t7,$t3
+bnez $t2, NaoAdicionar
 
 addi $t5,$t5,1
 sll $t2,$t5,2
 add $t2,$t2,$t6
 sw $t3,0($t2)
+
+NaoAdicionar:
 addi $t0,$t0,1 # i++
 addi $t1,$t1,1 # j++
 j check
 
 Less:
+sll $t2,$t5,2
+add $t2,$t2,$t6
+lw $t7,0($t2)		# t7 = resposta[-1]
+seq $t2,$t7,$t3
+bnez $t2, NaoAdicionarI
+
 add $t5,$t5,1
 sll $t2,$t5,2
 add $t2,$t2,$t6
 sw $t3,0($t2)
+
+NaoAdicionarI:
 addi $t0,$t0,1 # i++
 j check
 
 Greater:
+sll $t2,$t5,2
+add $t2,$t2,$t6
+lw $t7,0($t2)		# t7 = resposta[-1]
+seq $t2,$t7,$t4
+bnez $t2, NaoAdicionarJ
+
 add $t5,$t5,1
 sll $t2,$t5,2
 add $t2,$t2,$t6
 sw $t4,0($t2)
+
+NaoAdicionarJ:
 addi $t1,$t1,1 # j++
 j check
 
@@ -231,6 +252,10 @@ add $t2,$t2,$t6
 sw $t3,0($t2)
 addi $t0,$t0,1 # i++
 j ArrayDoisVazio
+
+IgualAnterior:
+
+
 
 Fim:
 add $v0,$zero,$t6 # retorno 1 - Array resposta
