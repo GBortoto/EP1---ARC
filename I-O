@@ -1,7 +1,7 @@
 # Teste de I/O
 
 .data
-array: .space 40
+array: .space 100
 filename: .ascii "teste.txt"
 buffer: .asciiz ""
 pulaLinha: .asciiz "\n"
@@ -239,7 +239,7 @@ move $a0,$t0
 syscall
 
 li $v0,4	# print " "
-move $a0,$s2
+move $a0,$s4
 syscall
 jr $ra
 
@@ -256,17 +256,14 @@ mflo $t1	# quociente
 bgt $t1,0,loop	# se quociente > 0
 
 
-
-add $t1,$zero,$a0	# Salva o valor a ser armazenado
-addi $t6,$zero,0	# i = 0
+addi $t1,$zero,10
+addi $t6,$zero,0
 Por10:
-add $a0,$zero,$a1
-addi $a1,$zero,10
-mult $a0,$a1
-mflo $v0
+mult $a1,$t1
+mflo $a1
 addi $t6,$t6,1
-ble $t6,$t5,Por10	# if (i <= VezesPor10)
-
+blt $t6,$t5,Por10
+add $v0,$a1,$a0
 jr $ra
 
 j END
