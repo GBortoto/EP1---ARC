@@ -10,7 +10,7 @@
 
 .data		
 	array1: .word 2 3 4 6 7 8 9 12 15
-	array2: .word 1 3 3 3 3 3 5 6 7 8
+	array2: .word 1 3 5 6 7 8
 	resposta: .space 100
 	space: .asciiz " "
 	pulaLinha: .asciiz "\n"
@@ -21,7 +21,7 @@
 la $s0, array1
 addi $s1,$zero,8 # array.length - 1
 la $s2, array2
-addi $s3,$zero,9
+addi $s3,$zero,5
 la $s4, space
 la $s5, pulaLinha
 la $s6, resposta
@@ -103,18 +103,6 @@ move $a0,$s5
 syscall
 
 
-
-
-
-
-
-
-
-
-
-
-
-
 j END
 
 printValor:
@@ -130,14 +118,15 @@ jr $ra
 j END
 
 concatena:
-subi $sp,$sp,28		# Aumenta a pilha em 7 palavras
-sw $t0,24($sp)		# Salva o valor atual de t0
-sw $t1,20($sp)		# Salva o valor atual de t1
-sw $t2,16($sp)		# Salva o valor atual de t2
-sw $t3,12($sp)		# Salva o valor atual de t3
-sw $t4,8($sp)		# Salva o valor atual de t4
-sw $t5,4($sp)		# Salva o valor atual de t5
-sw $t6,0($sp)		# Salva o valor atual de t6
+subi $sp,$sp,32		# Aumenta a pilha em 7 palavras
+sw $t0,28($sp)		# Salva o valor atual de t0
+sw $t1,24($sp)		# Salva o valor atual de t1
+sw $t2,20($sp)		# Salva o valor atual de t2
+sw $t3,16($sp)		# Salva o valor atual de t3
+sw $t4,12($sp)		# Salva o valor atual de t4
+sw $t5,8($sp)		# Salva o valor atual de t5
+sw $t6,4($sp)		# Salva o valor atual de t6
+sw $t7,0($sp)		# Salva o valor atual de t7
 
 # Recebe
 # a0 = s1 = tamanho do array 1
@@ -261,14 +250,15 @@ Fim:
 add $v0,$zero,$t6 # retorno 1 - Array resposta
 add $v1,$zero,$t5 # retorno 2 - Tamanho do array resposta
 
-lw $t6,0($sp)		# Repoe o valor original de t0
-lw $t5,-4($sp)		# Repoe o valor original de t0
-lw $t4,-8($sp)		# Repoe o valor original de t0
-lw $t3,-12($sp)		# Repoe o valor original de t0
-lw $t2,-16($sp)		# Repoe o valor original de t0
-lw $t1,-20($sp)		# Repoe o valor original de t0
-lw $t0,-24($sp)		# Repoe o valor original de t0
-addi $sp,$sp,28		# Diminui a pilha em 7 palavras
+lw $t7,0($sp)		# Repoe o valor original de t7
+lw $t6,4($sp)		# Repoe o valor original de t6
+lw $t5,8($sp)		# Repoe o valor original de t5
+lw $t4,12($sp)		# Repoe o valor original de t4
+lw $t3,16($sp)		# Repoe o valor original de t3
+lw $t2,20($sp)		# Repoe o valor original de t2
+lw $t1,24($sp)		# Repoe o valor original de t1
+lw $t0,28($sp)		# Repoe o valor original de t0
+addi $sp,$sp,32		# Diminui a pilha em 8 palavras
 jr $ra
 
 END:
