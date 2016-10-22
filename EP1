@@ -82,8 +82,9 @@ add $a3,$zero,$s2 # int *vetor2
 # Chama a função "concatena"
 jal concatena
 
-add $s6,$zero,$v0
-add $s7,$zero,$v1
+# Armazena os valores retornados
+add $s6,$zero,$v0 # $s6 = array resposta
+add $s7,$zero,$v1 # $s7 = tamanho do array resposta - 1
 
 addi $t1,$zero,0
 addi $t2,$zero,0
