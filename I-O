@@ -246,25 +246,33 @@ jr $ra
 j END
 
 LidarComDecimal:
-
-addi $t5,$zero,0 # i = 0
-addi $t6,$zero,10 # 10
-loop:
-addi $t5,$t5,1 # i++
-div $a1,$t6	# número/10
-mflo $t1	# quociente
-bgt $t1,0,loop	# se quociente > 0
-
-
-addi $t1,$zero,10
-addi $t6,$zero,0
-Por10:
-mult $a1,$t1
-mflo $a1
-addi $t6,$t6,1
-blt $t6,$t5,Por10
-add $v0,$a1,$a0
+addi $t5,$zero,0
+beqz $a1,skip
+addi $t6,$zero,10
+mult $a1,$t6
+mflo $t5
+skip:
+add $v0,$t5,$a0
 jr $ra
+#addi $t5,$zero,0 # i = 0
+#addi $t6,$zero,10 # 10
+#add $t1,$zero,$a1
+#loop:
+#addi $t5,$t5,1 # i++
+#div $t1,$t6	# número/10
+#mflo $t1	# quociente
+#bgt $t1,0,loop	# se quociente > 0
+
+
+#addi $t1,$zero,10
+#addi $t6,$zero,0
+#Por10:
+#mult $a1,$t1
+#mflo $a1
+#addi $t6,$t6,1
+#blt $t6,$t5,Por10
+#add $v0,$a1,$a0
+#jr $ra
 
 j END
 
