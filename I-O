@@ -64,8 +64,6 @@ j Translate
 
 
 
-
-
 EndOfFile1:
 addi $t1,$zero,0
 addi $t2,$zero,0
@@ -90,144 +88,45 @@ j END
 
 
 Translate:
-beq $t1,48,Zero
-beq $t1,49,Um
-beq $t1,50,Dois
-beq $t1,51,Tres
-beq $t1,52,Quatro
-beq $t1,53,Cinco
-beq $t1,54,Seis
-beq $t1,55,Sete
-beq $t1,56,Oito
-beq $t1,57,Nove
+addi $t4,$zero,0
+beq $t1,48,ASCII_To_Word
+addi $t4,$zero,1
+beq $t1,49,ASCII_To_Word
+addi $t4,$zero,2
+beq $t1,50,ASCII_To_Word
+addi $t4,$zero,3
+beq $t1,51,ASCII_To_Word
+addi $t4,$zero,4
+beq $t1,52,ASCII_To_Word
+addi $t4,$zero,5
+beq $t1,53,ASCII_To_Word
+addi $t4,$zero,6
+beq $t1,54,ASCII_To_Word
+addi $t4,$zero,7
+beq $t1,55,ASCII_To_Word
+addi $t4,$zero,8
+beq $t1,56,ASCII_To_Word
+addi $t4,$zero,9
+beq $t1,57,ASCII_To_Word
 beq $t1,32,Space
 j Error
 
-Zero:
+
+ASCII_To_Word:
 sll $t0,$s3,2
 add $t0,$t0,$s2
 lw $t1,0($t0)
 
-add $a0,$zero,0
+add $a0,$zero,$t4
 add $a1,$zero,$t1
 jal LidarComDecimal
 add $t1,$zero,$v0
 sw $t1,0($t0)
 j read
-
-Um:
-sll $t0,$s3,2
-add $t0,$t0,$s2
-lw $t1,0($t0)
-
-add $a0,$zero,1
-add $a1,$zero,$t1
-jal LidarComDecimal
-add $t1,$zero,$v0
-sw $t1,0($t0)
-j read
-
-Dois:
-sll $t0,$s3,2
-add $t0,$t0,$s2
-lw $t1,0($t0)
-
-add $a0,$zero,2
-add $a1,$zero,$t1
-jal LidarComDecimal
-add $t1,$zero,$v0
-sw $t1,0($t0)
-j read
-
-Tres:
-sll $t0,$s3,2
-add $t0,$t0,$s2
-lw $t1,0($t0)
-
-add $a0,$zero,3
-add $a1,$zero,$t1
-jal LidarComDecimal
-add $t1,$zero,$v0
-sw $t1,0($t0)
-j read
-
-Quatro:
-sll $t0,$s3,2
-add $t0,$t0,$s2
-lw $t1,0($t0)
-
-add $a0,$zero,4
-add $a1,$zero,$t1
-jal LidarComDecimal
-add $t1,$zero,$v0
-sw $t1,0($t0)
-j read
-
-Cinco:
-sll $t0,$s3,2
-add $t0,$t0,$s2
-lw $t1,0($t0)
-
-add $a0,$zero,5
-add $a1,$zero,$t1
-jal LidarComDecimal
-add $t1,$zero,$v0
-sw $t1,0($t0)
-j read
-
-Seis:
-sll $t0,$s3,2
-add $t0,$t0,$s2
-lw $t1,0($t0)
-
-add $a0,$zero,6
-add $a1,$zero,$t1
-jal LidarComDecimal
-add $t1,$zero,$v0
-sw $t1,0($t0)
-j read
-
-Sete:
-sll $t0,$s3,2
-add $t0,$t0,$s2
-lw $t1,0($t0)
-
-add $a0,$zero,7
-add $a1,$zero,$t1
-jal LidarComDecimal
-add $t1,$zero,$v0
-sw $t1,0($t0)
-j read
-
-Oito:
-sll $t0,$s3,2
-add $t0,$t0,$s2
-lw $t1,0($t0)
-
-add $a0,$zero,8
-add $a1,$zero,$t1
-jal LidarComDecimal
-add $t1,$zero,$v0
-sw $t1,0($t0)
-j read
-
-Nove:
-sll $t0,$s3,2
-add $t0,$t0,$s2
-lw $t1,0($t0)
-
-add $a0,$zero,9
-add $a1,$zero,$t1
-jal LidarComDecimal
-add $t1,$zero,$v0
-sw $t1,0($t0)
-j read
-
 
 Space:
 addi $s3,$s3,1
 j read
-
 
 Error:
 
@@ -254,27 +153,7 @@ mflo $t5
 skip:
 add $v0,$t5,$a0
 jr $ra
-#addi $t5,$zero,0 # i = 0
-#addi $t6,$zero,10 # 10
-#add $t1,$zero,$a1
-#loop:
-#addi $t5,$t5,1 # i++
-#div $t1,$t6	# número/10
-#mflo $t1	# quociente
-#bgt $t1,0,loop	# se quociente > 0
-
-
-#addi $t1,$zero,10
-#addi $t6,$zero,0
-#Por10:
-#mult $a1,$t1
-#mflo $a1
-#addi $t6,$t6,1
-#blt $t6,$t5,Por10
-#add $v0,$a1,$a0
-#jr $ra
 
 j END
-
 
 END:
