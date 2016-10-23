@@ -2,7 +2,7 @@
 
 .data
 array1: .space 4000
-array2: .space 4000
+array2: .space 8000
 filename1: .asciiz "arquivo1.txt"
 filename2: .asciiz "arquivo2.txt"
 buffer: .asciiz ""
@@ -25,7 +25,7 @@ la $s7, pulaLinha
 addi $t1,$zero,0
 addi $t0,$zero,0 # i
 Fill:
-bge $t0,1000, EndFill # while i < 10
+bge $t0,10, EndFill # while i < 10
 sll $t2,$t0,2
 add $t2,$t2,$s2
 sw $t1,0($t2)	# array[i] = 0
@@ -49,9 +49,9 @@ LerSegundoArray:
 addi $t1,$zero,0
 addi $t0,$zero,0 # i
 Fill2:
-bge $t0,1000, EndFill2 # while i < 10
+bge $t0,2000, EndFill2 # while i < 10
 sll $t2,$t0,2
-add $t2,$t2,$s4
+add $t2,$t2,$s2
 sw $t1,0($t2)	# array[i] = 0
 addi $t0,$t0,1 # i++
 j Fill2
@@ -92,11 +92,6 @@ addi $t1,$zero,0
 addi $t2,$zero,0
 subi $s3,$s3,1
 
-j printArray
-
-bgtz $s5, END
-j LerSegundoArray
-
 printArray:
 sll $t2,$t1,2
 add $t2,$t2,$s2
@@ -109,9 +104,40 @@ j printArray
 
 FimPrintArray:
 li $v0,4	# print "\n"
-la $t0, pulaLinha
-move $a0,$t0
+#la $t0, pulaLinha
+move $a0,$s6
 syscall
+
+bgtz $s5, TrocaDeVolta
+
+# Swap array e array2 de lugar
+
+# array1		$s2	-->	array2
+# tam.array1		$s3	-->	tam.array2
+# array2		$s4	-->	array1
+# tam.array2		$s5	-->	tam.array1
+
+add $t0,$zero,$s2	# Guarda $s2
+add $t1,$zero,$s3	# Guarda $s3
+
+add $s2,$zero,$s4	# $s2 = array2
+add $s3,$zero,$s5	# $s3 = tam.array2
+
+add $s4,$zero,$t0	# $s4 = array1
+add $s5,$zero,$t1	# $s5 = tam.array1
+j LerSegundoArray
+
+
+
+TrocaDeVolta:
+add $t0,$zero,$s2	# Guarda $s2
+add $t1,$zero,$s3	# Guarda $s3
+
+add $s2,$zero,$s4	# $s2 = array1
+add $s3,$zero,$s5	# $s3 = tam.array1
+
+add $s4,$zero,$t0	# $s4 = array2
+add $s5,$zero,$t1	# $s5 = tam.array2
 j END
 
 
@@ -155,16 +181,7 @@ lw $t1,0($t0)
 add $a0,$zero,$t4
 add $a1,$zero,$t1
 jal LidarComDecimal
-beqz $t9,NotNegative
-addi $t1,$zero,-1
-mult $v0,$t1
-mflo $t1
-j Negative
-
-NotNegative:
 add $t1,$zero,$v0
-
-Negative:
 sw $t1,0($t0)
 j read
 
@@ -176,9 +193,23 @@ Enter:
 bgtz $t8, EndOfFile
 addi $s3,$s3,1
 addi $t8,$t8,1
+bgtz $t9, Negative
+j read
+
+Negative:
+subi $t0,$s3,1
+sll $t0,$t0,2
+add $t0,$t0,$s2
+lw $t1,($t0)
+addi $t3,$zero,-1
+mult $t1,$t3
+mflo $t1
+sw $t1,0($t0)
+addi $t9,$zero,0
 j read
 
 Minus:
+addi $t8,$zero,0
 addi $t9,$zero,1
 j read
 
@@ -192,8 +223,8 @@ move $a0,$t0
 syscall
 
 li $v0,4	# print " "
-la $t0, space
-move $a0,$t0
+#la $t0, space
+move $a0,$s7
 syscall
 jr $ra
 
