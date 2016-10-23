@@ -1,8 +1,10 @@
 # Teste de I/O
 
 .data
-array: .space 100
-filename: .ascii "teste.txt"
+array1: .space 4000
+array2: .space 4000
+filename1: .asciiz "arquivo1.txt"
+filename2: .asciiz "arquivo2.txt"
 buffer: .asciiz ""
 pulaLinha: .asciiz "\n"
 space: .asciiz " "
@@ -10,18 +12,20 @@ space: .asciiz " "
 .text
 
 la $s1, buffer
-addi $t1,$zero,0 #i
-la $s2, array
-addi $s3,$zero,0 #array size
-la $s4, space
-la $s5, pulaLinha
+addi $t1,$zero,0 # i
+la $s2, array1
+addi $s3,$zero,0 # array size
+la $s4, array2
+addi $s5,$zero,0 # array2 size
+la $s6, space
+la $s7, pulaLinha
 
 
 # fill(array)
 addi $t1,$zero,0
 addi $t0,$zero,0 # i
 Fill:
-bge $t0,10, EndFill # while i < 10
+bge $t0,1000, EndFill # while i < 10
 sll $t2,$t0,2
 add $t2,$t2,$s2
 sw $t1,0($t2)	# array[i] = 0
@@ -29,44 +33,70 @@ addi $t0,$t0,1 # i++
 j Fill
 EndFill:
 
+la $t3, filename1
+li   $v0, 13        # system call for open file
+add $a0,$zero,$t3   # input file name
+li   $a1, 0         # flag for reading
+li   $a2, 0         # mode is ignored
+syscall             # open a file 
+move $s0, $v0       # save the file descriptor 
+addi $t2,$zero,0
+j read
 
+LerSegundoArray:
 
+# fill(array2)
+addi $t1,$zero,0
+addi $t0,$zero,0 # i
+Fill2:
+bge $t0,1000, EndFill2 # while i < 10
+sll $t2,$t0,2
+add $t2,$t2,$s4
+sw $t1,0($t2)	# array[i] = 0
+addi $t0,$t0,1 # i++
+j Fill2
+EndFill2:
 
-li   $v0, 13       # system call for open file
-la   $a0, filename # input file name
+la $s1, buffer
+addi $t1,$zero,0 # i
+
+la $t3, filename2
+li   $v0, 13        # system call for open fileopen file
+add $a0,$zero,$t3   # input file name
 li   $a1, 0        # flag for reading
 li   $a2, 0        # mode is ignored
 syscall            # open a file 
 move $s0, $v0      # save the file descriptor 
-
-
-
-
 addi $t2,$zero,0
+
+
 read:
+addi $t7,$zero,0
 # reading from file just opened
 li   $v0, 14       # system call for reading from file
 move $a0, $s0      # file descriptor 
 la   $a1, buffer   # address of buffer from which to read
 add $a2,$t2,1
-#addi $a2,$a2,4
 #li   $a2, $t0	   # hardcoded buffer length
 syscall            # read from file
 
 add $t3,$t2,$s1
-#addi $t3,
 lb $t1, 0($t3)
 
-beq $t1,16,EndOfFile1
-beq $t1,10,EndOfFile1
+beq $t1,16,EndOfFile
+beq $t1,10,Enter
 j Translate
 
-
-
-
-EndOfFile1:
+EndOfFile:
 addi $t1,$zero,0
 addi $t2,$zero,0
+subi $s3,$s3,1
+
+j printArray
+
+bgtz $s5, END
+j LerSegundoArray
+
 printArray:
 sll $t2,$t1,2
 add $t2,$t2,$s2
@@ -79,9 +109,12 @@ j printArray
 
 FimPrintArray:
 li $v0,4	# print "\n"
-move $a0,$s5
+la $t0, pulaLinha
+move $a0,$t0
 syscall
 j END
+
+
 
 
 
@@ -109,10 +142,12 @@ beq $t1,56,ASCII_To_Word
 addi $t4,$zero,9
 beq $t1,57,ASCII_To_Word
 beq $t1,32,Space
+beq $t1,45,Minus
 j Error
 
 
 ASCII_To_Word:
+addi $t8,$zero,0
 sll $t0,$s3,2
 add $t0,$t0,$s2
 lw $t1,0($t0)
@@ -120,12 +155,31 @@ lw $t1,0($t0)
 add $a0,$zero,$t4
 add $a1,$zero,$t1
 jal LidarComDecimal
+beqz $t9,NotNegative
+addi $t1,$zero,-1
+mult $v0,$t1
+mflo $t1
+j Negative
+
+NotNegative:
 add $t1,$zero,$v0
+
+Negative:
 sw $t1,0($t0)
 j read
 
 Space:
 addi $s3,$s3,1
+j read
+
+Enter:
+bgtz $t8, EndOfFile
+addi $s3,$s3,1
+addi $t8,$t8,1
+j read
+
+Minus:
+addi $t9,$zero,1
 j read
 
 Error:
@@ -138,7 +192,8 @@ move $a0,$t0
 syscall
 
 li $v0,4	# print " "
-move $a0,$s4
+la $t0, space
+move $a0,$t0
 syscall
 jr $ra
 
