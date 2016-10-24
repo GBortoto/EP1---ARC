@@ -8,15 +8,22 @@
 #------------------------------------------------------------------------------------------
 
 .data
-array1: .space 4000			# Espaço alocado para o primeiro array
+array1: .space 8000			# Espaço alocado para o primeiro array
 array2: .space 8000			# Espaço alocado para o segundo array
-arrayResposta: .space 12000		# Espaço alocado para o terceiro array
+arrayResposta: .space 16000		# Espaço alocado para o terceiro array
 bufferForWritting: .space 4		# Buffer utilizado para escrever arquivos no disco
+bufferForReading: .ascii ""		# Buffer utilizado para ler a entrada do usuário
 filename1: .asciiz "arquivo1.txt"	# Nome do arquivo de entrada 1
 filename2: .asciiz "arquivo2.txt"	# Nome do arquivo de entrada 2
 OutputFileName: .asciiz "resultado.txt"	# Nome do arquivo de saída
 buffer: .asciiz ""			# Buffer utilizado para ler arquivos do disco
 pulaLinha: .asciiz "\n"			# Utilizado para os prints
+
+mensagem1: .asciiz "Nome do arquivo 1 (max 21 caracteres): "
+mensagem2: .asciiz "Nome do arquivo 2 (max 21 caracteres): "
+mensagem3: .asciiz "Nome do arquivo final (max 21 caracteres): "
+
+
 
 #------------------------------------------------------------------------------------------
 .text
@@ -29,10 +36,42 @@ la $s7, pulaLinha	# Utilizado para os prints
 #------------------------------------------------------------------------------------------
 addi $t1,$zero,0
 
+# Nome do arquivo 1:
+la $a0, mensagem1
+li $v0, 4
+syscall
+
+li $v0,8			# 8 = Receber input
+la $a0, bufferForReading	# Carregar N bytes no buffer
+li $a1, 21			# N = 20
+move $t0,$a0			# $t0
+syscall
+
+#------------------------------------------------------------------------------------------
+# Replace10With0
+# Para o programa reconhecer o nome do arquivo, deve ser trocado o elemento 10 ("\n") por
+# 0 (NULL)
+Replace10With0:
+li $t0, 0
+#loop counter
+li $t1, 21
+#loop end
+limpar:
+beq $t0,$t1, fimDaString
+lb $t3, bufferForReading($t0)
+bne $t3, 0x0a,proximo
+sb $zero, bufferForReading($t0)
+proximo:
+addi $t0,$t0,1
+j limpar
+fimDaString:
+
+
 LerPrimeiroArray:
-la $t3, filename1
+#add $t3,$zero,$t0
 li   $v0, 13        # system call for open file
-add $a0,$zero,$t3   # input file name
+la   $a0, bufferForReading
+#add $a0,$zero,$t3   # input file name
 li   $a1, 0         # flag for reading
 li   $a2, 0         # mode is ignored
 syscall             # open a file 
@@ -41,16 +80,48 @@ addi $t2,$zero,0
 j read
 
 LerSegundoArray:
+
+# Nome do arquivo 2:
+la $a0, mensagem2
+li $v0, 4
+syscall
+
+li $v0,8			# 8 = Receber input
+la $a0, bufferForReading	# Carregar N bytes no buffer
+li $a1, 21			# N = 20
+move $t0,$a0			# $t0
+syscall
+
+#------------------------------------------------------------------------------------------
+# Replace10With0
+# Para o programa reconhecer o nome do arquivo, deve ser trocado o elemento 10 ("\n") por
+# 0 (NULL)
+Replace10With0.2:
+li $t0, 0
+#loop counter
+li $t1, 21
+#loop end
+limpar2:
+beq $t0,$t1, fimDaString2
+lb $t3, bufferForReading($t0)
+bne $t3, 0x0a,proximo2
+sb $zero, bufferForReading($t0)
+proximo2:
+addi $t0,$t0,1
+j limpar2
+fimDaString2:
+
+
 la $s1, buffer
 addi $t1,$zero,0 # i
 
-la $t3, filename2
-li   $v0, 13        # system call for open fileopen file
-add $a0,$zero,$t3   # input file name
-li   $a1, 0        # flag for reading
-li   $a2, 0        # mode is ignored
-syscall            # open a file 
-move $s0, $v0      # save the file descriptor 
+#la $t3, bufferForReading
+li   $v0, 13       		# system call for open fileopen file
+la   $a0, bufferForReading	# input file name
+li   $a1, 0        		# flag for reading
+li   $a2, 0       		# mode is ignored
+syscall           		# open a file 
+move $s0, $v0     		# save the file descriptor 
 addi $t2,$zero,0
 
 # -----------------------------------------------------------------------------------------
@@ -196,7 +267,7 @@ printArray:		# Mostrar todo o array
 sll $t2,$t1,2
 add $t2,$t2,$s2
 lw $t0, 0($t2)		# $t0 = array[i]
-jal printValor		# print(t0)
+#jal printValor		# print(t0)
 
 bge $t1,$s3, FimPrintArray	# if(i >= array.length) FimPrintArray
 addi $t1,$t1,1		# i++
@@ -341,9 +412,40 @@ add $s7,$zero,$v1	# $s7 = tamanho do array resposta - 1
 # AbrirArquivo
 # Essa função faz a chamada ao sistema para abrir o arquivo final (resultado).
 # O descritor do arquivo (File descriptor) é guardado em $t9
+
+# Nome do arquivo resposta:
+la $a0, mensagem3
+li $v0, 4
+syscall
+
+li $v0,8			# 8 = Receber input
+la $a0, bufferForReading	# Carregar N bytes no buffer
+li $a1, 21			# N = 20
+move $t0,$a0			# $t0
+syscall
+
+#------------------------------------------------------------------------------------------
+# Replace10With0
+# Para o programa reconhecer o nome do arquivo, deve ser trocado o elemento 10 ("\n") por
+# 0 (NULL)
+Replace10With0.3:
+li $t0, 0
+#loop counter
+li $t1, 21
+#loop end
+limpar3:
+beq $t0,$t1, fimDaString3
+lb $t3, bufferForReading($t0)
+bne $t3, 0x0a,proximo3
+sb $zero, bufferForReading($t0)
+proximo3:
+addi $t0,$t0,1
+j limpar3
+fimDaString3:
+
 AbrirArquivo:
 li $v0, 13
-la $a0, OutputFileName
+la $a0, bufferForReading
 li $a1, 1
 li $a2, 0
 syscall  # File descriptor gets returned in $v0
@@ -384,7 +486,7 @@ EscreverEnter:
     la $a2, 1
     syscall
 
-jal printValor2		# Escrever o número no terminal
+#jal printValor2		# Escrever o número no terminal
 
 bge $t1,$s7, FimPrintArrayFinal	# if(i >= array.length) FimPrintArrayFinal
 addi $t1,$t1,1		# i++
