@@ -6,11 +6,14 @@
 array1: .space 4000
 array2: .space 8000
 arrayResposta: .space 12000
+bufferForWritting: .space 4
 filename1: .asciiz "arquivo1.txt"
 filename2: .asciiz "arquivo2.txt"
+OutputFileName: .asciiz "resultado.txt"
 buffer: .asciiz ""
 pulaLinha: .asciiz "\n"
 space: .asciiz " "
+
 
 .text
 
@@ -52,7 +55,7 @@ LerSegundoArray:
 addi $t1,$zero,0
 addi $t0,$zero,0 # i
 Fill2:
-bge $t0,2000, EndFill2 # while i < 10
+bge $t0,10, EndFill2 # while i < 10
 sll $t2,$t0,2
 add $t2,$t2,$s2
 sw $t1,0($t2)	# array[i] = 0
@@ -91,6 +94,11 @@ beq $t1,10,Enter
 j Translate
 
 EndOfFile:
+
+add $a0,$zero,$s0
+li $v0, 16		# Fechar arquivo
+syscall
+    
 addi $t1,$zero,0
 addi $t2,$zero,0
 subi $s3,$s3,1
@@ -299,7 +307,7 @@ addi $s7,$zero,0
 # resposta[]		$s6
 # resposta.length - 1 	$s7
 
-la $s4, space
+la $s4, bufferForWritting
 la $s5, pulaLinha
 la $s6, arrayResposta
 addi $s7,$zero,-1
@@ -332,12 +340,40 @@ jal concatena
 add $s6,$zero,$v0 # $s6 = array resposta
 add $s7,$zero,$v1 # $s7 = tamanho do array resposta - 1
 
+file_open:
+    li $v0, 13
+    la $a0, OutputFileName
+    li $a1, 1
+    li $a2, 0
+    syscall  # File descriptor gets returned in $v0
+
+add $t9,$zero,$v0
+
 addi $t1,$zero,0
 addi $t2,$zero,0
 printArrayFinal:
 sll $t2,$t1,2
 add $t2,$t2,$s6
 lw $t0, 0($t2)
+
+add $t7,$zero,$t0
+add $t8,$zero,$t1
+jal NumberToASCII
+add $t0,$zero,$t7
+add $t1,$zero,$t8
+
+add $t7,$zero,$s4
+addi $t6,$zero,10
+sw $t6,0($t7)
+
+# Pular linha
+file_write:
+    move $a0, $t9  # Syscall 15 requieres file descriptor in $a0
+    li $v0, 15
+    add $a1,$zero,$t7
+    la $a2, 1
+    syscall
+
 jal printValor2
 
 bge $t1,$s7, FimPrintArrayFinal	# if(i >= array.length) FimPrint
@@ -348,8 +384,69 @@ FimPrintArrayFinal:
 li $v0,4	# print "\n"
 move $a0,$s5
 syscall
-
 j END2
+
+NumberToASCII:
+add $t3,$zero,$t0
+addi $t1,$zero,0
+addi $t2,$zero,10
+addi $t4,$zero,1
+
+bltz $t0, NTANegativo
+j loop
+
+NTANegativo:
+
+add $t2,$zero,$s4
+addi $t6,$zero,45
+sw $t6,0($t2)
+
+move $a0, $t9  # Syscall 15 requieres file descriptor in $a0
+li $v0, 15
+add $a1,$zero,$t2
+la $a2, 1
+syscall
+addi $t2,$zero,10
+
+addi $t4,$zero,-1
+mult $t4,$t0
+mflo $t0
+j NumberToASCII
+
+loop:
+addi $t1,$t1,1
+div $t3,$t2
+mfhi $t3
+addi $t3,$t3,48
+subi $sp,$sp,4
+sw $t3, 0($sp)
+mflo $t3
+bgtz $t3, loop
+
+
+loop2:
+subi $t1,$t1,1
+lw $t6, 0($sp)
+addi $sp,$sp,4
+add $t3,$zero,$s4
+sw $t6,0($t3)
+
+move $a0, $t9  # Syscall 15 requieres file descriptor in $a0
+li $v0, 15
+add $a1,$zero,$t3
+la $a2, 1
+syscall
+
+bgtz $t1, loop2
+
+EndNumberToASCII:
+addi $t0,$zero,0
+addi $t1,$zero,0
+addi $t2,$zero,0
+addi $t3,$zero,0
+addi $t4,$zero,0
+   
+jr $ra
 
 concatena:
 subi $sp,$sp,32		# Aumenta a pilha em 7 palavras
@@ -507,7 +604,7 @@ lw $t0,28($sp)		# Repoe o valor original de t0
 addi $sp,$sp,32		# Diminui a pilha em 8 palavras
 jr $ra
 
-j END
+j END2
 
 printValor2:
 li $v0,1	# print array[i]
@@ -521,3 +618,26 @@ syscall
 jr $ra
 
 END2:
+addi $v0,$zero,0
+addi $v1,$zero,0
+
+addi $a0,$zero,0
+addi $a1,$zero,0
+addi $a2,$zero,0
+addi $a3,$zero,0
+
+addi $t0,$zero,0
+addi $t1,$zero,0
+addi $t2,$zero,0
+addi $t3,$zero,0
+addi $t4,$zero,0
+addi $t5,$zero,0
+addi $t6,$zero,0
+addi $t7,$zero,0
+addi $t8,$zero,0
+addi $t9,$zero,0
+
+add $s4,$zero,$s6
+add $s5,$zero,$s7
+addi $s6,$zero,0
+addi $s7,$zero,0
