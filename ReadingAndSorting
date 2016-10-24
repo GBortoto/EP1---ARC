@@ -1,0 +1,523 @@
+# Integração entre I-O e EP1
+
+# Teste de I/O
+
+.data
+array1: .space 4000
+array2: .space 8000
+arrayResposta: .space 12000
+filename1: .asciiz "arquivo1.txt"
+filename2: .asciiz "arquivo2.txt"
+buffer: .asciiz ""
+pulaLinha: .asciiz "\n"
+space: .asciiz " "
+
+.text
+
+la $s1, buffer
+addi $t1,$zero,0 # i
+la $s2, array1
+addi $s3,$zero,0 # array size
+la $s4, array2
+addi $s5,$zero,0 # array2 size
+la $s6, space
+la $s7, pulaLinha
+
+
+# fill(array)
+addi $t1,$zero,0
+addi $t0,$zero,0 # i
+Fill:
+bge $t0,10, EndFill # while i < 10
+sll $t2,$t0,2
+add $t2,$t2,$s2
+sw $t1,0($t2)	# array[i] = 0
+addi $t0,$t0,1 # i++
+j Fill
+EndFill:
+
+la $t3, filename1
+li   $v0, 13        # system call for open file
+add $a0,$zero,$t3   # input file name
+li   $a1, 0         # flag for reading
+li   $a2, 0         # mode is ignored
+syscall             # open a file 
+move $s0, $v0       # save the file descriptor 
+addi $t2,$zero,0
+j read
+
+LerSegundoArray:
+
+# fill(array2)
+addi $t1,$zero,0
+addi $t0,$zero,0 # i
+Fill2:
+bge $t0,2000, EndFill2 # while i < 10
+sll $t2,$t0,2
+add $t2,$t2,$s2
+sw $t1,0($t2)	# array[i] = 0
+addi $t0,$t0,1 # i++
+j Fill2
+EndFill2:
+
+la $s1, buffer
+addi $t1,$zero,0 # i
+
+la $t3, filename2
+li   $v0, 13        # system call for open fileopen file
+add $a0,$zero,$t3   # input file name
+li   $a1, 0        # flag for reading
+li   $a2, 0        # mode is ignored
+syscall            # open a file 
+move $s0, $v0      # save the file descriptor 
+addi $t2,$zero,0
+
+
+read:
+addi $t7,$zero,0
+# reading from file just opened
+li   $v0, 14       # system call for reading from file
+move $a0, $s0      # file descriptor 
+la   $a1, buffer   # address of buffer from which to read
+add $a2,$t2,1
+#li   $a2, $t0	   # hardcoded buffer length
+syscall            # read from file
+
+add $t3,$t2,$s1
+lb $t1, 0($t3)
+
+beq $t1,16,EndOfFile
+beq $t1,10,Enter
+j Translate
+
+EndOfFile:
+addi $t1,$zero,0
+addi $t2,$zero,0
+subi $s3,$s3,1
+
+printArray:
+sll $t2,$t1,2
+add $t2,$t2,$s2
+lw $t0, 0($t2)
+jal printValor
+slt $t4,$t1,$s3		# if(i >= array.length) FimPrint
+beqz $t4, FimPrintArray
+addi $t1,$t1,1
+j printArray
+
+FimPrintArray:
+li $v0,4	# print "\n"
+#la $t0, pulaLinha
+move $a0,$s6
+syscall
+
+bgtz $s5, TrocaDeVolta
+
+# Swap array e array2 de lugar
+
+# array1		$s2	-->	array2
+# tam.array1		$s3	-->	tam.array2
+# array2		$s4	-->	array1
+# tam.array2		$s5	-->	tam.array1
+
+add $t0,$zero,$s2	# Guarda $s2
+add $t1,$zero,$s3	# Guarda $s3
+
+add $s2,$zero,$s4	# $s2 = array2
+add $s3,$zero,$s5	# $s3 = tam.array2
+
+add $s4,$zero,$t0	# $s4 = array1
+add $s5,$zero,$t1	# $s5 = tam.array1
+j LerSegundoArray
+
+
+
+TrocaDeVolta:
+add $t0,$zero,$s2	# Guarda $s2
+add $t1,$zero,$s3	# Guarda $s3
+
+add $s2,$zero,$s4	# $s2 = array1
+add $s3,$zero,$s5	# $s3 = tam.array1
+
+add $s4,$zero,$t0	# $s4 = array2
+add $s5,$zero,$t1	# $s5 = tam.array2
+j END
+
+
+
+
+
+
+
+Translate:
+addi $t4,$zero,0
+beq $t1,48,ASCII_To_Word
+addi $t4,$zero,1
+beq $t1,49,ASCII_To_Word
+addi $t4,$zero,2
+beq $t1,50,ASCII_To_Word
+addi $t4,$zero,3
+beq $t1,51,ASCII_To_Word
+addi $t4,$zero,4
+beq $t1,52,ASCII_To_Word
+addi $t4,$zero,5
+beq $t1,53,ASCII_To_Word
+addi $t4,$zero,6
+beq $t1,54,ASCII_To_Word
+addi $t4,$zero,7
+beq $t1,55,ASCII_To_Word
+addi $t4,$zero,8
+beq $t1,56,ASCII_To_Word
+addi $t4,$zero,9
+beq $t1,57,ASCII_To_Word
+beq $t1,32,Space
+beq $t1,45,Minus
+j Error
+
+
+ASCII_To_Word:
+addi $t8,$zero,0
+sll $t0,$s3,2
+add $t0,$t0,$s2
+lw $t1,0($t0)
+
+add $a0,$zero,$t4
+add $a1,$zero,$t1
+jal LidarComDecimal
+add $t1,$zero,$v0
+sw $t1,0($t0)
+j read
+
+Space:
+addi $s3,$s3,1
+j read
+
+Enter:
+bgtz $t8, EndOfFile
+addi $s3,$s3,1
+addi $t8,$t8,1
+bgtz $t9, Negative
+j read
+
+Negative:
+subi $t0,$s3,1
+sll $t0,$t0,2
+add $t0,$t0,$s2
+lw $t1,($t0)
+addi $t3,$zero,-1
+mult $t1,$t3
+mflo $t1
+sw $t1,0($t0)
+addi $t9,$zero,0
+j read
+
+Minus:
+addi $t8,$zero,0
+addi $t9,$zero,1
+j read
+
+Error:
+
+j END
+
+printValor:
+li $v0,1	# print array[i]
+move $a0,$t0
+syscall
+
+li $v0,4	# print " "
+#la $t0, space
+move $a0,$s7
+syscall
+jr $ra
+
+j END
+
+LidarComDecimal:
+addi $t5,$zero,0
+beqz $a1,skip
+addi $t6,$zero,10
+mult $a1,$t6
+mflo $t5
+skip:
+add $v0,$t5,$a0
+jr $ra
+
+j END
+
+END:
+
+
+# --------------------------------------------------------------------------
+# Final da primeira parte do programa:
+# Ler os dois arquivos e armazena-los em memória
+
+# --------------------------------------------------------------------------
+# Resentando tudo
+
+addi $v0,$zero,0
+addi $v1,$zero,0
+
+addi $a0,$zero,0
+addi $a1,$zero,0
+addi $a2,$zero,0
+addi $a3,$zero,0
+
+addi $t0,$zero,0
+addi $t1,$zero,0
+addi $t2,$zero,0
+addi $t3,$zero,0
+addi $t4,$zero,0
+addi $t5,$zero,0
+addi $t6,$zero,0
+addi $t7,$zero,0
+addi $t8,$zero,0
+addi $t9,$zero,0
+
+add $s0,$zero,$s2
+add $s1,$zero,$s3
+add $s2,$zero,$s4
+add $s3,$zero,$s5
+addi $s4,$zero,0
+addi $s5,$zero,0
+addi $s6,$zero,0
+addi $s7,$zero,0
+
+
+# PARTE 2
+# Pegar esses dois arquivos armazenados e armazena-los em um terceiro array,
+# ordenando-os no processo e retirando repetições
+# --------------------------------------------------------------------------
+
+
+# array[]		$s0
+# array.length - 1	$s1
+# array2[]		$s2
+# array2.length - 1	$s3
+# space			$s4
+# \n			$s5
+# resposta[]		$s6
+# resposta.length - 1 	$s7
+
+la $s4, space
+la $s5, pulaLinha
+la $s6, arrayResposta
+addi $s7,$zero,-1
+#----------------------------------------------------------------------
+
+# fill(array)
+addi $t1,$zero,0
+addi $t0,$zero,0 # i
+Fill3:
+bge $t0,10, EndFill3 # while i < 10
+sll $t2,$t0,2
+add $t2,$t2,$s6
+sw $t1,0($t2)	# array[i] = 0
+addi $t0,$t0,1 # i++
+j Fill3
+EndFill3:
+
+
+addi $t0,$s1,1 # t0 = s1 + 1 --> array.length  - 1 + 1 = array.length
+addi $t1,$s3,1 # t1 = s3 + 1 --> array2.length - 1 + 1 = array2.length
+
+add $a0,$zero,$t0 # int *tam1
+add $a1,$zero,$s0 # int *vetor1
+add $a2,$zero,$t1 # int *tam2
+add $a3,$zero,$s2 # int *vetor2
+# Chama a função "concatena"
+jal concatena
+
+# Armazena os valores retornados
+add $s6,$zero,$v0 # $s6 = array resposta
+add $s7,$zero,$v1 # $s7 = tamanho do array resposta - 1
+
+addi $t1,$zero,0
+addi $t2,$zero,0
+printArrayFinal:
+sll $t2,$t1,2
+add $t2,$t2,$s6
+lw $t0, 0($t2)
+jal printValor2
+
+bge $t1,$s7, FimPrintArrayFinal	# if(i >= array.length) FimPrint
+addi $t1,$t1,1
+j printArrayFinal
+
+FimPrintArrayFinal:
+li $v0,4	# print "\n"
+move $a0,$s5
+syscall
+
+j END2
+
+concatena:
+subi $sp,$sp,32		# Aumenta a pilha em 7 palavras
+sw $t0,28($sp)		# Salva o valor atual de t0
+sw $t1,24($sp)		# Salva o valor atual de t1
+sw $t2,20($sp)		# Salva o valor atual de t2
+sw $t3,16($sp)		# Salva o valor atual de t3
+sw $t4,12($sp)		# Salva o valor atual de t4
+sw $t5,8($sp)		# Salva o valor atual de t5
+sw $t6,4($sp)		# Salva o valor atual de t6
+sw $t7,0($sp)		# Salva o valor atual de t7
+
+# Recebe
+# a0 = s1 = tamanho do array 1
+# a1 = s0 = array 1
+# a2 = s3 = tamanho do array 2
+# a3 = s2 = array 2
+
+addi $t0,$zero,0 # i --> posição no array[]
+addi $t1,$zero,0 # j --> posição no array2[]
+addi $t2,$zero,0 # tmp (place holder)
+addi $t3,$zero,0 # array[i]
+addi $t4,$zero,0 # array2[j]
+addi $t5,$zero,-1 # tamanho array resposta
+la $t6, arrayResposta # array resposta
+
+check:
+slt $t2,$t0,$a0			# if(i < array.length) continue checando
+beqz $t2, ArrayUmVazio
+slt $t2,$t1,$a2
+beqz $t2, ArrayDoisVazio	# if(j < array2.length) continue checando
+
+sll $t2,$t0,2
+add $t2,$t2,$a1
+lw $t3,0($t2)		# t3 = array[i]
+sll $t2,$t1,2
+add $t2,$t2,$a3
+lw $t4,0($t2)		# t4 = array2[j]
+
+
+seq $t2,$t3,$t4		# Se array[i] == array2[j]
+beq $t2,1,Equal
+slt $t2,$t3,$t4		# Se array[i] < array2[j]
+beq $t2,1,Less
+j Greater		# Se array[i] > array2[j]
+
+Equal:
+sll $t2,$t5,2
+add $t2,$t2,$t6
+lw $t7,0($t2)		# t7 = resposta[-1]
+seq $t2,$t7,$t3
+bnez $t2, NaoAdicionar
+
+addi $t5,$t5,1
+sll $t2,$t5,2
+add $t2,$t2,$t6
+sw $t3,0($t2)
+
+NaoAdicionar:
+addi $t0,$t0,1 # i++
+addi $t1,$t1,1 # j++
+j check
+
+Less:
+sll $t2,$t5,2
+add $t2,$t2,$t6
+lw $t7,0($t2)		# t7 = resposta[-1]
+seq $t2,$t7,$t3
+bnez $t2, NaoAdicionarI
+
+add $t5,$t5,1
+sll $t2,$t5,2
+add $t2,$t2,$t6
+sw $t3,0($t2)
+
+NaoAdicionarI:
+addi $t0,$t0,1 # i++
+j check
+
+Greater:
+sll $t2,$t5,2
+add $t2,$t2,$t6
+lw $t7,0($t2)		# t7 = resposta[-1]
+seq $t2,$t7,$t4
+bnez $t2, NaoAdicionarJ
+
+add $t5,$t5,1
+sll $t2,$t5,2
+add $t2,$t2,$t6
+sw $t4,0($t2)
+
+NaoAdicionarJ:
+addi $t1,$t1,1 # j++
+j check
+
+ArrayUmVazio:
+slt $t2,$t1,$a2
+beqz $t2, Fim	# if(j >= array2.length) Fim
+
+sll $t2,$t5,2
+add $t2,$t2,$t6
+lw $t7,0($t2)		# t7 = resposta[-1]
+
+sll $t2,$t1,2
+add $t2,$t2,$a3
+lw $t4,0($t2)		# t4 = array2[j]
+
+beq $t7,$t4, NaoAdicionarJ2
+
+add $t5,$t5,1
+sll $t2,$t5,2
+add $t2,$t2,$t6
+sw $t4,0($t2)
+
+NaoAdicionarJ2:
+addi $t1,$t1,1 # j++
+j ArrayUmVazio
+
+
+ArrayDoisVazio:
+slt $t2,$t0,$a0
+beqz $t2, Fim	# if(i >= array.length) Fim
+
+sll $t2,$t5,2
+add $t2,$t2,$t6
+lw $t7,0($t2)		# t7 = resposta[-1]
+
+sll $t2,$t0,2
+add $t2,$t2,$a1
+lw $t3,0($t2)		# t3 = array[i]
+
+beq $t7,$t3, NaoAdicionarI2
+
+add $t5,$t5,1
+sll $t2,$t5,2
+add $t2,$t2,$t6
+sw $t3,0($t2)
+
+NaoAdicionarI2:
+addi $t0,$t0,1 # i++
+j ArrayDoisVazio
+
+Fim:
+add $v0,$zero,$t6 # retorno 1 - Array resposta
+add $v1,$zero,$t5 # retorno 2 - Tamanho do array resposta
+
+lw $t7,0($sp)		# Repoe o valor original de t7
+lw $t6,4($sp)		# Repoe o valor original de t6
+lw $t5,8($sp)		# Repoe o valor original de t5
+lw $t4,12($sp)		# Repoe o valor original de t4
+lw $t3,16($sp)		# Repoe o valor original de t3
+lw $t2,20($sp)		# Repoe o valor original de t2
+lw $t1,24($sp)		# Repoe o valor original de t1
+lw $t0,28($sp)		# Repoe o valor original de t0
+addi $sp,$sp,32		# Diminui a pilha em 8 palavras
+jr $ra
+
+j END
+
+printValor2:
+li $v0,1	# print array[i]
+move $a0,$t0
+syscall
+
+li $v0,4	# print " "
+#la $t0, space
+move $a0,$s5
+syscall
+jr $ra
+
+END2:

@@ -243,10 +243,6 @@ sw $t3,0($t2)
 addi $t0,$t0,1 # i++
 j ArrayDoisVazio
 
-IgualAnterior:
-
-
-
 Fim:
 add $v0,$zero,$t6 # retorno 1 - Array resposta
 add $v1,$zero,$t5 # retorno 2 - Tamanho do array resposta
