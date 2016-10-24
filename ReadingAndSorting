@@ -1,35 +1,41 @@
-# Exercício de programação - ACH2055 - Arquitetura de Computadores
-# Docente:	Prof. Dr. Clodoaldo Aparecido
-#
-# Dicentes:	Alex Alves da Silva Bognar	927698
-#		Álex Santana Fogaça		9360732
-#		Guilherme Bortoto de Moraes	9360760
-#		Juliana Mayumi Suzuki		9277691
-#------------------------------------------------------------------------------------------
+# Integração entre I-O e EP1
+
+# Teste de I/O
 
 .data
-array1: .space 4000			# Espaço alocado para o primeiro array
-array2: .space 8000			# Espaço alocado para o segundo array
-arrayResposta: .space 12000		# Espaço alocado para o terceiro array
-bufferForWritting: .space 4		# Buffer utilizado para escrever arquivos no disco
-filename1: .asciiz "arquivo1.txt"	# Nome do arquivo de entrada 1
-filename2: .asciiz "arquivo2.txt"	# Nome do arquivo de entrada 2
-OutputFileName: .asciiz "resultado.txt"	# Nome do arquivo de saída
-buffer: .asciiz ""			# Buffer utilizado para ler arquivos do disco
-pulaLinha: .asciiz "\n"			# Utilizado para os prints
+array1: .space 4000
+array2: .space 8000
+arrayResposta: .space 12000
+filename1: .asciiz "arquivo1.txt"
+filename2: .asciiz "arquivo2.txt"
+buffer: .asciiz ""
+pulaLinha: .asciiz "\n"
+space: .asciiz " "
 
-#------------------------------------------------------------------------------------------
 .text
-la $s1, buffer		# Buffer utilizado para ler arquivos do disco 
-la $s2, array1		# array1
-addi $s3,$zero,0	# array1 size
-la $s4, array2		# array2
-addi $s5,$zero,0	# array2 size
-la $s7, pulaLinha	# Utilizado para os prints
-#------------------------------------------------------------------------------------------
-addi $t1,$zero,0
 
-LerPrimeiroArray:
+la $s1, buffer
+addi $t1,$zero,0 # i
+la $s2, array1
+addi $s3,$zero,0 # array size
+la $s4, array2
+addi $s5,$zero,0 # array2 size
+la $s6, space
+la $s7, pulaLinha
+
+
+# fill(array)
+addi $t1,$zero,0
+addi $t0,$zero,0 # i
+Fill:
+bge $t0,10, EndFill # while i < 10
+sll $t2,$t0,2
+add $t2,$t2,$s2
+sw $t1,0($t2)	# array[i] = 0
+addi $t0,$t0,1 # i++
+j Fill
+EndFill:
+
 la $t3, filename1
 li   $v0, 13        # system call for open file
 add $a0,$zero,$t3   # input file name
@@ -41,6 +47,19 @@ addi $t2,$zero,0
 j read
 
 LerSegundoArray:
+
+# fill(array2)
+addi $t1,$zero,0
+addi $t0,$zero,0 # i
+Fill2:
+bge $t0,2000, EndFill2 # while i < 10
+sll $t2,$t0,2
+add $t2,$t2,$s2
+sw $t1,0($t2)	# array[i] = 0
+addi $t0,$t0,1 # i++
+j Fill2
+EndFill2:
+
 la $s1, buffer
 addi $t1,$zero,0 # i
 
@@ -53,10 +72,7 @@ syscall            # open a file
 move $s0, $v0      # save the file descriptor 
 addi $t2,$zero,0
 
-# -----------------------------------------------------------------------------------------
-# read
-# Essa função lê o próximo byte em arquivo e o retorna
-# Lê: Byte em arquivo, codificado em ASCII
+
 read:
 addi $t7,$zero,0
 # reading from file just opened
@@ -69,168 +85,41 @@ syscall            # read from file
 
 add $t3,$t2,$s1
 lb $t1, 0($t3)
+
+beq $t1,16,EndOfFile
+beq $t1,10,Enter
 j Translate
 
-# -----------------------------------------------------------------------------------------
-# Translate
-# Essa função recebe o valor ASCII lido do arquivo através do registrador $t0
-# e o traduz para um valor inteiro, guardando-o em $t4.
-# Após a tradução, chama a função ASCII_To_Word, a qual escreve na memória o valor em $t4
-# Essa função também traduz "-" e "\n"
-
-Translate:
-beq $t1,10,Enter		# "\n"	ASCII: 10
-addi $t4,$zero,0
-beq $t1,48,ASCII_To_Word	# "0"	ASCII: 48
-addi $t4,$zero,1
-beq $t1,49,ASCII_To_Word	# "1"	ASCII: 49
-addi $t4,$zero,2
-beq $t1,50,ASCII_To_Word	# "2"	ASCII: 50
-addi $t4,$zero,3
-beq $t1,51,ASCII_To_Word	# "3"	ASCII: 51
-addi $t4,$zero,4
-beq $t1,52,ASCII_To_Word	# "4"	ASCII: 52
-addi $t4,$zero,5
-beq $t1,53,ASCII_To_Word	# "5"	ASCII: 53
-addi $t4,$zero,6
-beq $t1,54,ASCII_To_Word	# "6"	ASCII: 54
-addi $t4,$zero,7
-beq $t1,55,ASCII_To_Word	# "7"	ASCII: 55
-addi $t4,$zero,8
-beq $t1,56,ASCII_To_Word	# "8"	ASCII: 56
-addi $t4,$zero,9
-beq $t1,57,ASCII_To_Word	# "9"	ASCII: 57
-
-beq $t1,45,Minus		# "-"	ASCII: 45
-
-beq $t1,32,Space		# " "	ASCII: 32
-j Error
-
-# -----------------------------------------------------------------------------------------
-# Error
-# Caso exista algum caractere desconhecido, terminar programa
-Error:
-j END2
-
-# -----------------------------------------------------------------------------------------
-# Space
-# Ignorar espaços
-Space:
-addi $t8,$zero,0	# 
-addi $s3,$s3,1
-j read
-
-# -----------------------------------------------------------------------------------------
-# Minus
-# Caso o caracter lido for "-"
-Minus:
-addi $t8,$zero,0	# 
-addi $t9,$zero,1	# settar a flag para negativos $t9
-j read
-
-# -----------------------------------------------------------------------------------------
-# Enter
-# Caso o caracter lido for "\n"
-Enter:
-bgtz $t8, EndOfFile	# Dois "\n" em seguida --> Arquivo finalizado
-addi $s3,$s3,1		# Passar para próxima palavra (aka o número acabou)
-addi $t8,$t8,1		# Flag para "O último caracter foi um "\n" "
-bgtz $t9, Negative	# Preciso tornar o número negativo?
-j read
-
-# -----------------------------------------------------------------------------------------
-# Negative
-# Caso a flag $t9 seja verdadeira ao final de um número,
-# torne esse número em memória negativo
-Negative:
-subi $t0,$s3,1
-sll $t0,$t0,2
-add $t0,$t0,$s2
-lw $t1,($t0)		# $t1 = ultimo número em memória
-addi $t3,$zero,-1
-mult $t1,$t3
-mflo $t1
-sw $t1,0($t0)
-addi $t9,$zero,0	# Resetar Flag "negativo"
-j read
-
-# -----------------------------------------------------------------------------------------
-# ASCII_To_Word
-# Essa função recebe o número a ser adicionado na memória através do registrador $t4
-ASCII_To_Word:
-addi $t8,$zero,0
-sll $t0,$s3,2
-add $t0,$t0,$s2
-lw $t1,0($t0)		# $t1 = valor atual na memória
-
-add $a0,$zero,$t4	# argumento 1 = Valor a ser adicionar
-add $a1,$zero,$t1	# argumento 2 = Valor já existente na memória
-jal LidarComDecimal	# Chamar a função LidarComDecimal(argumento1,argumento2)
-add $t1,$zero,$v0	# $t1 = resultado da função
-sw $t1,0($t0)		# Gravar $t1 na memória
-j read
-
-# -----------------------------------------------------------------------------------------
-# LidarComDecimal
-# Essa função pega o valor armazenado na memória, o multiplica por 10 e adiciona o valor
-# a ser inserido
-# Ex:	a0 = 123	v0 = 123 * 10 + 4 = 1230 + 4 = 1234
-#	a1 = 4
-LidarComDecimal:
-addi $t5,$zero,0
-beqz $a1,skip
-
-addi $t6,$zero,10
-mult $a1,$t6
-mflo $t5
-
-skip:			# Se o valor na memória for 0, só adicione o novo valor
-add $v0,$t5,$a0
-jr $ra
-
-
-# -----------------------------------------------------------------------------------------
-# EndOfFile
-# Essa função é chamada quando o arquivo é visto como finalizado ("\n\n")
-
 EndOfFile:
-add $a0,$zero,$s0
-li $v0, 16		# Fechar arquivo
-syscall
-    
-addi $t1,$zero,0	# i = 0
-addi $t2,$zero,0	# place holder
-subi $s3,$s3,1		# Devido a forma como o programa define o fim do arquivo,
-			# é necessário remover 1 do total de elementos no arquivo.
+addi $t1,$zero,0
+addi $t2,$zero,0
+subi $s3,$s3,1
 
-printArray:		# Mostrar todo o array
+printArray:
 sll $t2,$t1,2
 add $t2,$t2,$s2
-lw $t0, 0($t2)		# $t0 = array[i]
-jal printValor		# print(t0)
-
-bge $t1,$s3, FimPrintArray	# if(i >= array.length) FimPrintArray
-addi $t1,$t1,1		# i++
+lw $t0, 0($t2)
+jal printValor
+slt $t4,$t1,$s3		# if(i >= array.length) FimPrint
+beqz $t4, FimPrintArray
+addi $t1,$t1,1
 j printArray
 
 FimPrintArray:
-li $v0,4		# print "\n"
-move $a0,$s7
+li $v0,4	# print "\n"
+#la $t0, pulaLinha
+move $a0,$s6
 syscall
 
-bgtz $s5, TrocaDeVolta		# Caso o programa já tenha lido o segundo arquivo,
-				# o tamanho do array secundário (array1) vai ser
-				# maior do que 0. Nesse caso, destroque os arrays.
-				# Se não, inverta os arrays e leia o segundo arquivo.
+bgtz $s5, TrocaDeVolta
 
-# -----------------------------------------------------------------------------------------
-# Swap
-# Essa parte do código troca os arrays 1 e 2 de lugar, exibindo a configuração seguinte:
-# array1		$s2	-->	array2			$s2
-# tam.array1		$s3	-->	tam.array2		$s3
-# array2		$s4	-->	array1			$s4
-# tam.array2		$s5	-->	tam.array1		$s5
-Swap:
+# Swap array e array2 de lugar
+
+# array1		$s2	-->	array2
+# tam.array1		$s3	-->	tam.array2
+# array2		$s4	-->	array1
+# tam.array2		$s5	-->	tam.array1
+
 add $t0,$zero,$s2	# Guarda $s2
 add $t1,$zero,$s3	# Guarda $s3
 
@@ -242,13 +131,6 @@ add $s5,$zero,$t1	# $s5 = tam.array1
 j LerSegundoArray
 
 
-# -----------------------------------------------------------------------------------------
-# TrocaDeVolta:
-# Essa função retoma a posição original dos arrays, exibindo a configuração seguinte:
-# array2		$s2	-->	array1			$s2
-# tam.array2		$s3	-->	tam.array1		$s3
-# array1		$s4	-->	array2			$s4
-# tam.array1		$s5	-->	tam.array2		$s5
 
 TrocaDeVolta:
 add $t0,$zero,$s2	# Guarda $s2
@@ -261,29 +143,117 @@ add $s4,$zero,$t0	# $s4 = array2
 add $s5,$zero,$t1	# $s5 = tam.array2
 j END
 
-# -----------------------------------------------------------------------------------------
-# printValor:
-# Essa função recebe um valor em $t0 e o exibe no terminal
+
+
+
+
+
+
+Translate:
+addi $t4,$zero,0
+beq $t1,48,ASCII_To_Word
+addi $t4,$zero,1
+beq $t1,49,ASCII_To_Word
+addi $t4,$zero,2
+beq $t1,50,ASCII_To_Word
+addi $t4,$zero,3
+beq $t1,51,ASCII_To_Word
+addi $t4,$zero,4
+beq $t1,52,ASCII_To_Word
+addi $t4,$zero,5
+beq $t1,53,ASCII_To_Word
+addi $t4,$zero,6
+beq $t1,54,ASCII_To_Word
+addi $t4,$zero,7
+beq $t1,55,ASCII_To_Word
+addi $t4,$zero,8
+beq $t1,56,ASCII_To_Word
+addi $t4,$zero,9
+beq $t1,57,ASCII_To_Word
+beq $t1,32,Space
+beq $t1,45,Minus
+j Error
+
+
+ASCII_To_Word:
+addi $t8,$zero,0
+sll $t0,$s3,2
+add $t0,$t0,$s2
+lw $t1,0($t0)
+
+add $a0,$zero,$t4
+add $a1,$zero,$t1
+jal LidarComDecimal
+add $t1,$zero,$v0
+sw $t1,0($t0)
+j read
+
+Space:
+addi $s3,$s3,1
+j read
+
+Enter:
+bgtz $t8, EndOfFile
+addi $s3,$s3,1
+addi $t8,$t8,1
+bgtz $t9, Negative
+j read
+
+Negative:
+subi $t0,$s3,1
+sll $t0,$t0,2
+add $t0,$t0,$s2
+lw $t1,($t0)
+addi $t3,$zero,-1
+mult $t1,$t3
+mflo $t1
+sw $t1,0($t0)
+addi $t9,$zero,0
+j read
+
+Minus:
+addi $t8,$zero,0
+addi $t9,$zero,1
+j read
+
+Error:
+
+j END
+
 printValor:
 li $v0,1	# print array[i]
 move $a0,$t0
 syscall
 
 li $v0,4	# print " "
+#la $t0, space
 move $a0,$s7
 syscall
 jr $ra
 
+j END
+
+LidarComDecimal:
+addi $t5,$zero,0
+beqz $a1,skip
+addi $t6,$zero,10
+mult $a1,$t6
+mflo $t5
+skip:
+add $v0,$t5,$a0
+jr $ra
+
+j END
 
 END:
 
 
-# -----------------------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 # Final da primeira parte do programa:
 # Ler os dois arquivos e armazena-los em memória
 
-# -----------------------------------------------------------------------------------------
-# Resentando e organizando tudo
+# --------------------------------------------------------------------------
+# Resentando tudo
 
 addi $v0,$zero,0
 addi $v1,$zero,0
@@ -317,18 +287,19 @@ addi $s7,$zero,0
 # PARTE 2
 # Pegar esses dois arquivos armazenados e armazena-los em um terceiro array,
 # ordenando-os no processo e retirando repetições
-# -----------------------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 
 
 # array[]		$s0
 # array.length - 1	$s1
 # array2[]		$s2
 # array2.length - 1	$s3
+# space			$s4
 # \n			$s5
 # resposta[]		$s6
 # resposta.length - 1 	$s7
 
-la $s4, bufferForWritting
+la $s4, space
 la $s5, pulaLinha
 la $s6, arrayResposta
 addi $s7,$zero,-1
@@ -361,40 +332,12 @@ jal concatena
 add $s6,$zero,$v0 # $s6 = array resposta
 add $s7,$zero,$v1 # $s7 = tamanho do array resposta - 1
 
-file_open:
-    li $v0, 13
-    la $a0, OutputFileName
-    li $a1, 1
-    li $a2, 0
-    syscall  # File descriptor gets returned in $v0
-
-add $t9,$zero,$v0
-
 addi $t1,$zero,0
 addi $t2,$zero,0
 printArrayFinal:
 sll $t2,$t1,2
 add $t2,$t2,$s6
 lw $t0, 0($t2)
-
-add $t7,$zero,$t0
-add $t8,$zero,$t1
-jal NumberToASCII
-add $t0,$zero,$t7
-add $t1,$zero,$t8
-
-add $t7,$zero,$s4
-addi $t6,$zero,10
-sw $t6,0($t7)
-
-# Pular linha
-file_write:
-    move $a0, $t9  # Syscall 15 requieres file descriptor in $a0
-    li $v0, 15
-    add $a1,$zero,$t7
-    la $a2, 1
-    syscall
-
 jal printValor2
 
 bge $t1,$s7, FimPrintArrayFinal	# if(i >= array.length) FimPrint
@@ -405,69 +348,8 @@ FimPrintArrayFinal:
 li $v0,4	# print "\n"
 move $a0,$s5
 syscall
+
 j END2
-
-NumberToASCII:
-add $t3,$zero,$t0
-addi $t1,$zero,0
-addi $t2,$zero,10
-addi $t4,$zero,1
-
-bltz $t0, NTANegativo
-j loop
-
-NTANegativo:
-
-add $t2,$zero,$s4
-addi $t6,$zero,45
-sw $t6,0($t2)
-
-move $a0, $t9  # Syscall 15 requieres file descriptor in $a0
-li $v0, 15
-add $a1,$zero,$t2
-la $a2, 1
-syscall
-addi $t2,$zero,10
-
-addi $t4,$zero,-1
-mult $t4,$t0
-mflo $t0
-j NumberToASCII
-
-loop:
-addi $t1,$t1,1
-div $t3,$t2
-mfhi $t3
-addi $t3,$t3,48
-subi $sp,$sp,4
-sw $t3, 0($sp)
-mflo $t3
-bgtz $t3, loop
-
-
-loop2:
-subi $t1,$t1,1
-lw $t6, 0($sp)
-addi $sp,$sp,4
-add $t3,$zero,$s4
-sw $t6,0($t3)
-
-move $a0, $t9  # Syscall 15 requieres file descriptor in $a0
-li $v0, 15
-add $a1,$zero,$t3
-la $a2, 1
-syscall
-
-bgtz $t1, loop2
-
-EndNumberToASCII:
-addi $t0,$zero,0
-addi $t1,$zero,0
-addi $t2,$zero,0
-addi $t3,$zero,0
-addi $t4,$zero,0
-   
-jr $ra
 
 concatena:
 subi $sp,$sp,32		# Aumenta a pilha em 7 palavras
@@ -625,7 +507,7 @@ lw $t0,28($sp)		# Repoe o valor original de t0
 addi $sp,$sp,32		# Diminui a pilha em 8 palavras
 jr $ra
 
-j END2
+j END
 
 printValor2:
 li $v0,1	# print array[i]
@@ -633,31 +515,9 @@ move $a0,$t0
 syscall
 
 li $v0,4	# print " "
+#la $t0, space
 move $a0,$s5
 syscall
 jr $ra
 
 END2:
-addi $v0,$zero,0
-addi $v1,$zero,0
-
-addi $a0,$zero,0
-addi $a1,$zero,0
-addi $a2,$zero,0
-addi $a3,$zero,0
-
-addi $t0,$zero,0
-addi $t1,$zero,0
-addi $t2,$zero,0
-addi $t3,$zero,0
-addi $t4,$zero,0
-addi $t5,$zero,0
-addi $t6,$zero,0
-addi $t7,$zero,0
-addi $t8,$zero,0
-addi $t9,$zero,0
-
-add $s4,$zero,$s6
-add $s5,$zero,$s7
-addi $s6,$zero,0
-addi $s7,$zero,0
